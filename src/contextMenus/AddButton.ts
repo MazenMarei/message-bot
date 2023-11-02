@@ -366,5 +366,8 @@ function containsSingleEmoji(message:string) {
     const emojis = message.match(emojiPattern);
 
     // Check if the message contains exactly one emoji
-    return emojis !== null && emojis.length === 1 && emojis[0] === message;
+   return emojis !== null && emojis.length === 1 && emojis[0] === message === false
 }
+
+
+// if(BtnData.Emoji && BtnData.Emoji.length > 0 && !containsSingleEmoji(BtnData.Emoji).Error) BtnData.Emoji = containsSingleEmoji(BtnData.Emoji).Emoji
