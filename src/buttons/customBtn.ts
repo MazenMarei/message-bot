@@ -8,7 +8,7 @@ export default {
     roleRequired: "",
     function: async function ({ button }: { button: ButtonInteraction }) {
         const { client } = await import("../index.js");
-        let Msg = await button.deferReply({ephemeral : true}); 
+        let Msg = await button.reply({ephemeral : true , content : "lol"}); 
         // let menue = await MenuPages(
         //     {pages : (await button.guild.roles.fetch()).map(e => ({label : e.name , value : e.id , Description : "" , Emoji : ""})) ,
         //     MenuPlaceholder :  "asdasd" , message : {ephemeral : true , message :  Msg as any ,edit : true , interaction : button  } ,

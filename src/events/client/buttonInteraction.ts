@@ -17,7 +17,7 @@ export default {
 	function: async function (interaction: ButtonInteraction) {
 		if (!interaction.isButton()) return;
 
-		const button = client.buttons.get(interaction.customId ) || client.buttons.get(interaction.customId.startsWith("customBtn")? "customBtn":undefined ) as ButtonCommand;
+		const button = client.buttons.get(interaction.customId ) || client.buttons.get(interaction.customId.startsWith("customBtnNull")? "customBtnNull":undefined ) as ButtonCommand;
 		if (button) {			
 			if (button.permissions) {
 				const invalidPerms: any[] = [];
