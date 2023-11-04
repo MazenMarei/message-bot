@@ -1,5 +1,6 @@
 import { BitField, ButtonInteraction, GuildTextBasedChannel, MessageFlags, MessageFlagsBitField } from "discord.js";
 import { MenuPages } from "../utils/menue.js";
+import buttonConfig from "../models/button.js";
 
 export default {
     id: "customBtnNull", 
@@ -7,6 +8,7 @@ export default {
     permissions: [],
     roleRequired: "",
     function: async function ({ button }: { button: ButtonInteraction }) {
-        await button.deferUpdate(); 
-    },
+        let BtnData = await buttonConfig.findOne({ID : button.customId , guildId: button.guildId, message : button.message.id})
+        if(!BtnData) return
+        },
 } as any;

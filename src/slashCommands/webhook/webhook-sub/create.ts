@@ -18,8 +18,9 @@ export default {
         let UrlBtn = new ButtonBuilder().setStyle(ButtonStyle.Primary).setCustomId("secret-url").setLabel("اظهار رابط الويب هوك لمدة 15 ثانية")
         let BtnAction = new ActionRowBuilder<ButtonBuilder>().addComponents(DiscohookBtn ,UrlBtn )
         let Msg = await interaction.reply({ephemeral : true , embeds : [doneEmbed] , components : [BtnAction]})
-        let BtnCollector =  Msg.createMessageComponentCollector<MessageComponentType>({time : 0 })
+        let BtnCollector =  Msg.createMessageComponentCollector<MessageComponentType>({time : 60000 , filter : i =>["secret-url","urlBtn"].includes(i.customId)})
         BtnCollector.on("collect" , async (ButtonInteraction:ButtonInteraction) => {let UrlMsg = await ButtonInteraction.reply({ephemeral : true , content : createdweb.url.toString()}).then((a) => {setTimeout(() => { a.delete().catch(error => false)}, 15000); })})
+        BtnCollector.on("end", async () => {await Msg.edit({embeds : [] , components : [] , content : "انتهت مهلة الانتظار"}).catch(err => null)})
     }
 
 }

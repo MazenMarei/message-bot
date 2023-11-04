@@ -49,5 +49,6 @@ export default {
                 break;
         }
     })
+    btnCollector.on("end", async () => {await InfoMsg.edit({embeds : [] , components : [] , content : "انتهت مهلة الانتظار"}).catch(err => null)})
     }
 }

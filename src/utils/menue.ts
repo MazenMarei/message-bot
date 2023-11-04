@@ -30,7 +30,7 @@ export async function  MenuPages(
   
     data :  {pages : {label:string, value:(string | number | any), Description?:string,Emoji?:string , default ? : boolean}[] ,
     MenuPlaceholder : string ,
-    message:{ephemeral?  : boolean,messageEdit ?: boolean ,interaction : (ChatInputCommandInteraction), message ?: any  , editReply ?: boolean , edit ?: boolean , followUp ?: boolean , reply ?: boolean , content ?: string , embeds ?: EmbedBuilder[]},
+    message:{menuReply ?:boolean,menuEphemeral?:boolean, ephemeral?  : boolean,messageEdit ?: boolean ,interaction : (ChatInputCommandInteraction), message ?: any  , editReply ?: boolean , edit ?: boolean , followUp ?: boolean , reply ?: boolean , content ?: string , embeds ?: EmbedBuilder[]},
     menueLimts : {MinValues : number  , MaxValues : number  } , save :boolean  , cancel : boolean    , collectorTime? : number
   },
   )  {
@@ -64,8 +64,9 @@ export async function  MenuPages(
       let collector = MsgCollected.createMessageComponentCollector({time : data.collectorTime? data.collectorTime : 600000, filter : Filter})
       
       return new Promise( async (resolve, reject) => { 
-        collector.on("collect" , async (interaction : ( StringSelectMenuInteraction)) => {            
-          await interaction.deferUpdate()        
+        collector.on("collect" , async (interaction : ( StringSelectMenuInteraction)) => {     
+          if(data.message.menuReply)      await interaction.deferReply({ephemeral : data.message.menuEphemeral}) 
+          else await interaction.deferUpdate()        
           switch (interaction.customId) {
             case "nextButton"+data.message.interaction.user.id :
               currentPage ++
@@ -93,7 +94,7 @@ export async function  MenuPages(
               let addData = interaction.values.map((a, i) => {if(menuValues[currentPage].find((e : value) => e.value === a)) return; if(selectedValues === MaxValues) return {MaxValues : true} ;menuValues[currentPage].push({value  : a , default : true});selectedValues ++})
               if(addData.find(a => a?.MaxValues === true && data.menueLimts.MaxValues !== 0)) {resolve({MaxValues : true,  saved : true , message : MsgCollected , values : menuValues ,  interaction : interaction});collector.stop()}
               if(selectedValues === MaxValues && data.menueLimts.MaxValues !== 0) {resolve({MaxValues : true,  saved : true , message : MsgCollected , values : menuValues ,  interaction : interaction});collector.stop() }
-                 
+              
               break;
           }
         })

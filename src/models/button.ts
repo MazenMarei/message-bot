@@ -1,6 +1,5 @@
 
 import mongoose from "mongoose";
-import config from "../config.js";
 const Button = new mongoose.Schema({
     guildId: {
       required: true,
@@ -9,13 +8,9 @@ const Button = new mongoose.Schema({
     ID : {
         type: String,
     },
-    type : {
-        type :String
-    },
-    data : {
-        type : Object
-    }
-
+    data : Object,
+    message : String,
+    webhook : String,
     
 }, { timestamps: { createdAt: 'Created at' }});
 

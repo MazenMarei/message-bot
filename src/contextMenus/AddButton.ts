@@ -1,8 +1,7 @@
 import {ApplicationCommandType,ComponentEmojiResolvable,MessageContextMenuCommandInteraction, APITextInputComponent, AutocompleteInteraction ,ActionRowBuilder, ApplicationCommandOptionType, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Collection, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle , PermissionFlagsBits, APIEmbed, EmbedData, ButtonComponent, ButtonInteraction, APIMessageComponentButtonInteraction, MessageComponentType, APIActionRowComponent, APIActionRowComponentTypes, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ComponentType, Message, ModalSubmitInteraction, ChannelSelectMenuBuilder, ActionRow} from "discord.js";
 import { MenuPages } from "../utils/menue.js";
 import {Buffer} from'buffer';
-import { client } from "../index.js";
-
+import button from "../models/button.js";
 interface value { 
     label: string;
     value: string;
@@ -16,6 +15,7 @@ export default {
     type: ApplicationCommandType.Message,
     function: async function ({ interaction }: { interaction: MessageContextMenuCommandInteraction , Msg  : any }) {
         const { client } = await import("../index.js");
+
         let WebhoockMsg = interaction?.targetMessage 
         let getWebhook = (await interaction.guild.fetchWebhooks()).filter(a => a.id === WebhoockMsg.webhookId && a.owner.id === interaction.guild.members.me.id);
         let webhookCommandId = (await interaction.guild.commands.fetch({force : true})).filter(a => a.applicationId === interaction.guild.members.me.id && a.name === "webhook").first();
@@ -24,11 +24,11 @@ export default {
         WebhoockMsg.components.map((a,i) => {
             if(i+1 === 5 && WebhoockMsg.components.length ===  5 && a.components.length == 5) Max = true;
         })
-        if(!interaction.replied)await interaction.deferReply({ephemeral : true});
-        if(Max) return interaction.editReply({ content : "وصلت الرساله حدها الاقصي من الازرار"});
-        if(!getWebhook || getWebhook.size <= 0 ) return interaction.editReply({embeds : [new EmbedBuilder().setColor("Red").setDescription(`## **لا يمكني اضافة زر الي هذه الرساله , يجب علي الرساله ان تكون من صنع __ويب هوك__ وان يكون الويب هوك من __صنع البوت__ (يمكنك صنع ويب هوك من صنع البوت عن طريق استخادم </webhook create:${webhookCommandId.id}>)**`)]})
+        if(!interaction.replied) await interaction.deferReply({ephemeral : true});
+        if(Max) return interaction.editReply({ content : "وصلت الرساله حدها الاقصي من الازرار"}).catch(err => null);
+        if(!getWebhook || getWebhook.size <= 0 ) return interaction.editReply({embeds : [new EmbedBuilder().setColor("Red").setDescription(`## **لا يمكني اضافة زر الي هذه الرساله , يجب علي الرساله ان تكون من صنع __ويب هوك__ وان يكون الويب هوك من __صنع البوت__ (يمكنك صنع ويب هوك من صنع البوت عن طريق استخادم </webhook create:${webhookCommandId.id}>)**`)]}).catch(err => null)
         let MessageRows = WebhoockMsg.components
-        if (MessageRows.length >= 5) return interaction.editReply({ embeds : [new EmbedBuilder().setColor("Red").setDescription("## لا يمكنني اضافة المزيد من الازرار وصلت الرساله لحدها الاقصي")]})
+        if (MessageRows.length >= 5 && MessageRows[4].components.length >= 5) return interaction.editReply({ embeds : [new EmbedBuilder().setColor("Red").setDescription("## لا يمكنني اضافة المزيد من الازرار وصلت الرساله لحدها الاقصي")]}).catch(err => null)
         let BtnFunsArray  =[{label : "رابط" ,Description:"لتحديد رابط موقع او رساله" , value :"link" , Emoji:"🌐"},{label : "رتبة" ,Description:"اضافة او حذف رتبة للعضو" , value :"role" , Emoji:"🛡️"},{label : "رساله مخصصة" ,Description:"لاظهار / ارسال رساله في الروم او في الخاص" , value :"msg" , Emoji:"📝"},{label : "ولا شئ" ,Description:"زر للشكل فقط بدون اي وظيفة" , value :"null" , Emoji:"❓"}]
         
         let menueSub = await MenuPages({ pages: BtnFunsArray, MenuPlaceholder: "اختر وظيفة الزر", message: {  editReply: true, content: "برجاء اختيار وظيفة الزر الذي سيتم اضافتة" ,message : interaction, interaction : interaction as any , embeds : []}, menueLimts: {MinValues: 1,MaxValues: 1},save: false,cancel: false})  as any;
@@ -72,13 +72,13 @@ export default {
             case "role" :
                 buttonSetupProgressEmbed.setTitle(`## تجهيز الزر (${Btnprogress.progress}/${Btnprogress[BtnData.type]})`)
                 explainEmbed.setDescription("**حدد الرتبة التي تريد تطبيقها علي هذا الزر من القائمه في الاسفل**")  
-                let rolesMenue = await MenuPages({pages: (await interaction.guild.roles.fetch()).map(a => ({ label: a.name, value: a.id  })),MenuPlaceholder: "اختر الرتبة التي تريد اعطائها عن الضغط علي الزر",message: {messageEdit: true,interaction: interaction as any,message: menueMsg,edit: true,content : "" ,embeds : [buttonSetupProgressEmbed , explainEmbed]},menueLimts: {MinValues: 1,MaxValues: 1},save: false,cancel: false}) as any
+                let rolesMenue = await MenuPages({pages: (await interaction.guild.roles.fetch()).map(a => ({ label: a.name, value: a.id  })),MenuPlaceholder: "اختر الرتبة التي تريد اعطائها عن الضغط علي الزر",message: {editReply : true,interaction: interaction as any,message: interaction,content : "" ,embeds : [buttonSetupProgressEmbed , explainEmbed]},menueLimts: {MinValues: 1,MaxValues: 1},save: false,cancel: false}) as any
                 if(rolesMenue.timeOut) return
                 BtnData.role = rolesMenue.values.flat().find(a => a.value).value
                 let selectedRole = await interaction.guild.roles.fetch(BtnData.role, {force : true})
                 while (selectedRole.position >= interaction.guild.members.me.roles.highest.position) {
-                    rolesMenue.interaction.editReply({ephemeral : true, content : `لا يمكنني اعطاء الاعضاء رتبة${selectedRole} اعلي مني او نفس رتبتي , يرجي اختيار رتبة اخري`})
-                    rolesMenue = await MenuPages({pages: (await interaction.guild.roles.fetch()).map(a => ({ label: a.name, value: a.id  })),MenuPlaceholder: "اختر الرتبة التي تريد اعطائها عن الضغط علي الزر",message: {messageEdit: true,interaction: interaction as any,message: menueMsg,edit: true,content : "" ,embeds : [buttonSetupProgressEmbed , explainEmbed]},menueLimts: {MinValues: 1,MaxValues: 1},save: false,cancel: false}) as any
+                    rolesMenue.interaction.followUp({ephemeral : true, content : `لا يمكنني اعطاء الاعضاء رتبة${selectedRole} اعلي مني او نفس رتبتي , يرجي اختيار رتبة اخري`}).catch(err => null)
+                    rolesMenue = await MenuPages({pages: (await interaction.guild.roles.fetch()).map(a => ({ label: a.name, value: a.id  })),MenuPlaceholder: "اختر الرتبة التي تريد اعطائها عن الضغط علي الزر",message: {editReply : true,interaction: interaction as any,message: interaction,content : "" ,embeds : [buttonSetupProgressEmbed , explainEmbed]},menueLimts: {MinValues: 1,MaxValues: 1},save: false,cancel: false}) as any
                     if(rolesMenue.timeOut) return
                     BtnData.role = rolesMenue.values.flat().find(a => a.value).value
                     selectedRole = await interaction.guild.roles.fetch(BtnData.role)
@@ -93,8 +93,8 @@ export default {
             case "msg" :
                 buttonSetupProgressEmbed.setTitle(`## تجهيز الزر (${Btnprogress.progress}/${Btnprogress[BtnData.type]})`)
                 explainEmbed.setDescription("**حدد نوع الرساله من القائمة في الاسفل**")
-                let messageType = [{label : "مخفية في الروم" , Description : "رساله مخفية يراها من يضغط علي الزر فقط" , Emoji : "👁️" ,value : "hide" } , {label : "عاملة في الروم", Description : "رسالة تكون ظاهر للكل" , value : "public"  , Emoji : "📝"} , {label : "رساله في الخاص" , Description : "يتم ارسال رساله الي خاص العضو" , value : "dm" , Emoji : "✉️"}] as any[]
-                let MsgTypeMenue = await MenuPages({pages: messageType,MenuPlaceholder: "حدد نوع الرساله",message: {messageEdit: true,interaction: interaction as any,message: menueMsg,edit: true,embeds : [buttonSetupProgressEmbed , explainEmbed]},menueLimts: {MinValues: 1,MaxValues: 1},save: false,cancel: false}) as any
+                let messageType = [{label : "مخفية في الروم" , Description : "رساله مخفية يراها من يضغط علي الزر فقط" , Emoji : "👁️" ,value : "hide" } , {label : "عامة في الروم", Description : "رسالة تكون ظاهر للكل" , value : "public"  , Emoji : "📝"} , {label : "رساله في الخاص" , Description : "يتم ارسال رساله الي خاص العضو" , value : "dm" , Emoji : "✉️"}] as any[]
+                let MsgTypeMenue = await MenuPages({pages: messageType,MenuPlaceholder: "حدد نوع الرساله",message: {editReply: true,interaction: interaction as any,message: interaction,embeds : [buttonSetupProgressEmbed , explainEmbed]},menueLimts: {MinValues: 1,MaxValues: 1},save: false,cancel: false}) as any
                 BtnData.messageType = MsgTypeMenue.values.flat().find(a => a.value).value
                 Btnprogress.progress ++; 
                 let EmbedDescriptions = buttonSetupProgressEmbed.data.description
@@ -112,7 +112,7 @@ export default {
         explainEmbed.setDescription("**اكتب اسم الزر , الايموجي في القائمة المنبثقة  **")
         if(BtnData.type === "link") explainEmbed.setDescription("**اكتب اسم الزر , الايموجي والرابط في القائمة المنبثقة  **")
         if(BtnData.type === "msg") explainEmbed.setDescription("**اكتب اسم الزر , الايموجي والرابط الرساله من الموقع في القائمة المنبثقة  **")
-        await interaction.editReply({embeds : [buttonSetupProgressEmbed , explainEmbed ] , components : [ActionRows] , content : ""})  
+        await interaction.editReply({embeds : [buttonSetupProgressEmbed , explainEmbed ] , components : [ActionRows] , content : ""}).catch(err => null)
         buttonSetupProgressEmbed.setTitle(`## تجهيز الزر (${Btnprogress.progress}/${Btnprogress[BtnData.type]})`) 
         let getdata = await getBtnData(interaction , menueMsg , ButtonDataModal , BtnData , buttonSetupProgressEmbed , Btnprogress.progress) as any
         Btnprogress.progress = getdata.progress
@@ -137,36 +137,36 @@ export default {
         
         ActionRows.setComponents(Btn1, Btn2, Btn3,Btn4)
 
-        await interaction.editReply({embeds : [buttonSetupProgressEmbed , explainEmbed ] , content : ""})  
+        await interaction.editReply({embeds : [buttonSetupProgressEmbed , explainEmbed ] , content : ""}).catch(err => null)
         if(BtnData.type !== "link") { 
-            await interaction.editReply({ components : [ActionRows] , content : ""})  
+            await interaction.editReply({ components : [ActionRows] , content : ""}).catch(err => null)
             let choseBtns = await choseBtn(interaction , menueMsg , BtnData , Btnprogress.progress) as any
             Btnprogress.progress =  choseBtns.progress
              BtnData = choseBtns.BtnData
-        } else   await interaction.editReply({embeds : [buttonSetupProgressEmbed  ] ,components : [] , content : ""}) ;
+        } else   await interaction.editReply({embeds : [buttonSetupProgressEmbed  ] ,components : [] , content : ""}).catch(err => null) ;
         
-        await addBtn(getWebhook , WebhoockMsg , BtnData, Btnprogress.progress , buttonSetupProgressEmbed) as any
+        let customID = await addBtn(getWebhook , WebhoockMsg , BtnData, Btnprogress.progress , buttonSetupProgressEmbed) as any
         buttonSetupProgressEmbed.setTitle(`## تجهيز الزر (${Btnprogress.progress}/${Btnprogress[BtnData.type]})`)
         let EmbedDescription = buttonSetupProgressEmbed.data.description
         let BtnStyles = {1 : "بنفسجي" , 2 : "رمادي" , 3 : "اخضر" , 4 : "احمر",5 : "رمادي يتفاعل مع رابط"}
         EmbedDescription += "\n**"+Btnprogress.progress+".**  : شكل الزر " + `(${BtnStyles[BtnData.style?BtnData.style:5]})`
         buttonSetupProgressEmbed.setDescription(EmbedDescription)
-
+        let saveButtonData = await button.create({guildId : interaction.guildId , ID : customID , data : BtnData , message : WebhoockMsg.id , webhook : getWebhook.first().id})
         let addAnother = new ButtonBuilder()
         .setCustomId("addAnother")
         .setLabel("اضف زر اخر")
         .setStyle(ButtonStyle.Primary)
         let ActionAdd = new ActionRowBuilder<ButtonBuilder>().addComponents(addAnother)
-        menueMsg =  await interaction.editReply({embeds : [buttonSetupProgressEmbed  ] ,components : [ActionAdd] , content : ""})  
+        menueMsg =  await interaction.editReply({embeds : [buttonSetupProgressEmbed  ] ,components : [ActionAdd] , content : ""}).catch(err => null)  
         let AnotherCollector = menueMsg.createMessageComponentCollector({filter : i=> i.user.id === interaction.user.id && i.customId === "addAnother", time : 1800000 , componentType : ComponentType.Button})
         AnotherCollector.on("collect" , async (button : ButtonInteraction) => {
-            await button.deferUpdate()
+            await button.deferUpdate().catch(err => null)
             await this.function({ interaction   }); 
         })
 
         
         AnotherCollector.on("end" ,  async (button : ButtonInteraction) => {
-            await interaction.editReply({content : "انتهي وقت استخدام الامر" , embeds : [], components : []})
+            await interaction.editReply({content : "انتهي وقت استخدام الامر" , embeds : [], components : []}).catch(err => null)
         })
         
     },
@@ -179,6 +179,7 @@ async function addBtn(getWebhook , WebhoockMsg : Message , BtnData , progress , 
     let BtnAdded = false
     let components = []
     let BtnIndex = 0
+    let customID:string
     if(ActionRows.length > 0 && ActionRows.length <= 5) {
         for (let ActionRow  of ActionRows) {    
             if(ActionRow.components.length === 5) components.push(ActionRow) 
@@ -187,9 +188,9 @@ async function addBtn(getWebhook , WebhoockMsg : Message , BtnData , progress , 
             BtnIndex++
             let Btn = new ButtonBuilder()
             if(BtnData.type === "link") Btn.setStyle(ButtonStyle.Link).setURL(BtnData.url)
-            else if(BtnData.type === "msg")  Btn.setCustomId("customBtnMsg"+BtnIndex)
+            else if(BtnData.type === "msg") { Btn.setCustomId("customBtnMsg"+BtnIndex); customID = "customBtnMsg"+BtnIndex}
             else if(BtnData.type === "null") Btn.setCustomId("customBtnNull"+BtnIndex)
-            else if(BtnData.type === "role") Btn.setCustomId("customBtnRole"+BtnIndex)
+            else if(BtnData.type === "role") {Btn.setCustomId("customBtnRole"+BtnIndex); customID = "customBtnRole"+BtnIndex;}
     
             if(BtnData.type !== "link") Btn.setStyle(BtnData.style)
             if(BtnData.label && BtnData.label.length >= 1) Btn.setLabel(BtnData.label)
@@ -205,9 +206,9 @@ async function addBtn(getWebhook , WebhoockMsg : Message , BtnData , progress , 
             BtnIndex++
             let Btn = new ButtonBuilder()
             if(BtnData.type === "link") Btn.setStyle(ButtonStyle.Link).setURL(BtnData.url)
-            else if(BtnData.type === "msg")  Btn.setCustomId("customBtnMsg"+BtnIndex)
+            else if(BtnData.type === "msg") { Btn.setCustomId("customBtnMsg"+BtnIndex); customID = "customBtnMsg"+BtnIndex}
             else if(BtnData.type === "null") Btn.setCustomId("customBtnNull"+BtnIndex)
-            else if(BtnData.type === "role") Btn.setCustomId("customBtnRole"+BtnIndex)
+            else if(BtnData.type === "role") {Btn.setCustomId("customBtnRole"+BtnIndex); customID = "customBtnRole"+BtnIndex;}
     
             if(BtnData.type !== "link") Btn.setStyle(BtnData.style)
             if(BtnData.label && BtnData.label.length >= 1) Btn.setLabel(BtnData.label)
@@ -220,9 +221,9 @@ async function addBtn(getWebhook , WebhoockMsg : Message , BtnData , progress , 
             let Btn = new ButtonBuilder()
             BtnIndex++
             if(BtnData.type === "link") Btn.setStyle(ButtonStyle.Link).setURL(BtnData.url)
-            else if(BtnData.type === "msg")  Btn.setCustomId("customBtnMsg"+BtnIndex)
+            else if(BtnData.type === "msg")  {Btn.setCustomId("customBtnMsg"+BtnIndex); customID = "customBtnMsg"+BtnIndex}
             else if(BtnData.type === "null") Btn.setCustomId("customBtnNull"+BtnIndex)
-            else if(BtnData.type === "role") Btn.setCustomId("customBtnRole"+BtnIndex)
+            else if(BtnData.type === "role") {Btn.setCustomId("customBtnRole"+BtnIndex); customID = "customBtnRole"+BtnIndex;}
     
             if(BtnData.type !== "link") Btn.setStyle(BtnData.style)
             if(BtnData.label && BtnData.label.length >= 1) Btn.setLabel(BtnData.label)
@@ -231,10 +232,9 @@ async function addBtn(getWebhook , WebhoockMsg : Message , BtnData , progress , 
             let ActionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(Btn)
             components.push(ActionRow)
     }
-   await getWebhook.first().editMessage(WebhoockMsg , {components : components})
-   progress ++
-   let EmbedDescription = buttonSetupProgressEmbed.data.description
-   EmbedDescription+= "\n**"+progress+"** شكل الزر : )"
+
+   await getWebhook.first().editMessage(WebhoockMsg , {components : components}).catch(err => null)
+   return customID
     
 }
 
@@ -248,28 +248,28 @@ async function choseBtn(interaction , menueMsg , BtnData , progress) {
     ShowDataModalBtnCollecoter.on("collect" , async (button : ButtonInteraction) => {
         switch (button.customId) {
             case "Primary"+interaction.user.id:
-                await button.deferUpdate()
+                await button.deferUpdate().catch(err => null)
                 BtnData.style = ButtonStyle.Primary
                 progress ++;
                 resolve({progress , BtnData})
                 break;
         
             case"Secondary"+interaction.user.id:
-                await button.deferUpdate()
+                await button.deferUpdate().catch(err => null)
                 BtnData.style = ButtonStyle.Secondary
                 progress ++;
                 resolve({progress , BtnData})
                 break;
 
                 case"Success"+interaction.user.id:
-                    await button.deferUpdate()
+                    await button.deferUpdate().catch(err => null)
                     BtnData.style = ButtonStyle.Success 
                     progress ++;
                     resolve({progress , BtnData})
                     break;
 
             case"Danger"+interaction.user.id:
-                await button.deferUpdate()
+                await button.deferUpdate().catch(err => null)
                 BtnData.style = ButtonStyle.Danger
                 progress ++;
                 resolve({progress , BtnData})
@@ -282,6 +282,7 @@ async function choseBtn(interaction , menueMsg , BtnData , progress) {
 
 
 async function getBtnData(interaction , menueMsg , ButtonDataModal , BtnData , buttonSetupProgressEmbed , progress) {
+    const { client } = await import("../index.js");
     let Filter = (i : ButtonInteraction) => ["Showmodal"+interaction.user.id ].includes(i.customId) && i.user.id === interaction.user.id;
         
     let ShowDataModalBtnCollecoter = menueMsg.createMessageComponentCollector({time : 600000 , filter : Filter})
@@ -293,33 +294,34 @@ async function getBtnData(interaction , menueMsg , ButtonDataModal , BtnData , b
                 let MSg = await button.showModal(ButtonDataModal)
                 let Modal = await button.awaitModalSubmit({time : 600000 , filter : i => i.customId === "ButtonDataModal"+interaction.user.id})
                 
-                if(Modal.fields.fields.filter(a => a.value).size <= 0)  Modal.reply({content : "عليك تقديم اي بينات لايمكن ترك القائمة فارغة", ephemeral : true})
+                if(Modal.fields.fields.filter(a => a.value).size <= 0)  Modal.reply({content : "عليك تقديم اي بينات لايمكن ترك القائمة فارغة", ephemeral : true}).catch(err => null);
 
                 else {
-                    if(Modal.fields?.getField("btnLabel").value.length === 0 && Modal.fields?.getField("btnEmoji").value.length === 0) Modal.reply({content : "عليك تقديم اي بينات  (اسم الزر / سم الاموجي) علي الاقل", ephemeral : true})
+                    if(Modal.fields?.getField("btnLabel").value.length === 0 && Modal.fields?.getField("btnEmoji").value.length === 0) Modal.reply({content : "عليك تقديم اي بينات  (اسم الزر / سم الاموجي) علي الاقل", ephemeral : true}).catch(err => null);
                     else {
 
                     let EmbedDescription = buttonSetupProgressEmbed.data.description
 
                     BtnData.label = Modal.fields?.getField("btnLabel").value;
                     BtnData.Emoji = Modal.fields?.getField("btnEmoji").value;
-                    if(BtnData.Emoji && BtnData.Emoji.length > 0 && !containsSingleEmoji(BtnData.Emoji)) return Modal.reply({ephemeral : true , content : "تم ادخال اموجي خاطئ"})
-                    if(BtnData.type  === "link") BtnData.url = Modal.fields?.getField("btnLink").value;
+                    if(BtnData.Emoji && BtnData.Emoji.length > 0 &&   (await containsSingleEmoji(BtnData.Emoji)).error) return Modal.reply({ephemeral : true , content : "تم ادخال اموجي خاطئ"});
+                    else if(BtnData.Emoji && BtnData.Emoji.length > 0 && !(await containsSingleEmoji(BtnData.Emoji)).error) BtnData.Emoji = (await containsSingleEmoji(BtnData.Emoji)).emoji;
+                    if(BtnData.type  === "link") BtnData.url = Modal.fields?.getField("btnLink").value;                         
                     else if (BtnData.type  === "msg") BtnData.messaage = Modal.fields?.getField("btnMessaage").value;                        
 
                         progress ++
                         EmbedDescription += "\n**"+progress+".**  : اسم الزر" + `(${BtnData?.label?BtnData.label:"فارغ"})`
                         progress ++
-                        EmbedDescription += "\n**"+progress+".**  : الايموجي" + `(${BtnData?.Emoji?BtnData.Emoji:"فارغ"})`
-
+                        EmbedDescription += "\n**"+progress+".**  : الايموجي" + `(${client.emojis.cache?.find((a) => a.id === BtnData?.Emoji)?client.emojis.cache?.find((a) => a.id === BtnData?.Emoji):BtnData?.Emoji?BtnData?.Emoji:"فارغ"})`
+                        
                                                 
-                        if(BtnData.type  === "link" &&validURL(BtnData?.url)=== false) {progress--;progress--;return Modal.reply({content : "يرجي كتابة رابط صالح " , ephemeral : true })}
-                        else if (BtnData.type  === "msg" && isDiscohookUrl(BtnData.messaage) === false || BtnData.type  === "msg"  && (await getUrldata(BtnData.messaage)).Error === true) {progress--;progress--;return Modal.reply({content : "يرجي كتابة رابط صالح ", ephemeral : true})}
-                        if(BtnData.type  === "msg" && BtnData.messaage && BtnData.messaage >= 1) { progress ++;EmbedDescription += "\n**"+progress+".**   : بينات الرساله" + `(تم اخذها من الرابط)\n`;BtnData.messaage =(await getUrldata(BtnData.messaage)).data;}
-                        if(BtnData.type === "link" && BtnData?.url && BtnData?.url.length >= 1) { progress ++; EmbedDescription += "\n**"+progress+".**   : الرابط" + `(${BtnData?.url?BtnData.url:"فارغ"})\n`}
+                        if(BtnData.type  === "link" &&validURL(BtnData?.url)=== false) {progress--;progress--;return Modal.reply({content : "يرجي كتابة رابط صالح " , ephemeral : true }).catch(err => null);}
+                        else  if(validURL(BtnData?.url) === true){ progress ++; EmbedDescription += "\n**"+progress+".**   : الرابط" + `(${BtnData?.url?BtnData.url:"فارغ"})`}
+                        if (BtnData.type  === "msg" && isDiscohookUrl(BtnData.messaage) === false || BtnData.type  === "msg"  && (await getUrldata(BtnData.messaage)).Error === true) {progress--;progress--;return Modal.reply({content : "يرجي كتابة رابط صالح ", ephemeral : true}).catch(err => null);}
+                        else if( (await getUrldata(BtnData.messaage)).Error === false) { progress ++;EmbedDescription += "\n**"+progress+".**   : بينات الرساله" + `(تم اخذها من الرابط)`;BtnData.messaage =(await getUrldata(BtnData.messaage)).data}
                         
                         
-                        await Modal.deferUpdate();
+                        await Modal.deferUpdate().catch(err => null);
                         buttonSetupProgressEmbed.setDescription(EmbedDescription)
                         ShowDataModalBtnCollecoter.stop();
                         resolve({progress})
@@ -353,12 +355,28 @@ function isDiscohookUrl(url:string) {
 async function getUrldata(url:string) {
     if(isDiscohookUrl(url) === false)  return {Error : true};
     let data = await fetch(url)
-    let BufferData = Buffer.from(data.url.replace("https://discohook.org/?data=", ""), "base64")
-    return {Error : false , data : BufferData}
+    let BufferData = Buffer.from(data.url.replace("https://discohook.org/?data=", ""), "base64")    
+    return {Error : false , data : data.url.replace("https://discohook.org/?data=", "")}
 }
 
 
-function containsSingleEmoji(message:string) {
+// function containsSingleEmoji(message:string) {
+//     // Define a regular expression pattern for matching emojis
+//     const emojiPattern = /[\uD800-\uDBFF][\uDC00-\uDFFF]|\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\p{Emoji}\uFE0E/gu;
+
+//     // Use the match method to find all emojis in the message
+//     const emojis = message.match(emojiPattern);
+
+//     // Check if the message contains exactly one emoji
+//     if((emojis !== null && emojis.length === 1 && emojis[0] === message) === false )  {
+//         let disEmoji = client.emojis.cache?.find(a => a.id === message || a.name === message);
+//         if(disEmoji) return {error : false , emoji : disEmoji}
+//         else  return {error : true , emoji : disEmoji}
+//     } else return {error : emojis !== null && emojis.length === 1 && emojis[0] === message , emoji :message }
+// }
+async function containsSingleEmoji(message:string) {
+    const { client } = await import("../index.js");
+
     // Define a regular expression pattern for matching emojis
     const emojiPattern = /[\uD800-\uDBFF][\uDC00-\uDFFF]|\p{Emoji_Presentation}|\p{Emoji}\uFE0F|\p{Emoji}\uFE0E/gu;
 
@@ -366,8 +384,21 @@ function containsSingleEmoji(message:string) {
     const emojis = message.match(emojiPattern);
 
     // Check if the message contains exactly one emoji
-   return emojis !== null && emojis.length === 1 && emojis[0] === message === false
+    if (emojis !== null && emojis.length === 1 && emojis[0] === message) {
+        return { error: false, emoji: message };
+    } else {
+        // If it's not a single emoji, check if it's a custom emoji from Discord
+        let disEmoji = client.emojis.cache?.find((a) => a.id === message || a.name === message);
+        if (disEmoji) {
+            return { error: false, emoji:disEmoji.id };
+        } else {
+            return { error: true, emoji: null };
+        }
+    }
 }
+
+// Example usage:
+
 
 
 // if(BtnData.Emoji && BtnData.Emoji.length > 0 && !containsSingleEmoji(BtnData.Emoji).Error) BtnData.Emoji = containsSingleEmoji(BtnData.Emoji).Emoji
