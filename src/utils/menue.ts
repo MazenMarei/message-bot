@@ -66,7 +66,7 @@ export async function  MenuPages(
       return new Promise( async (resolve, reject) => { 
         collector.on("collect" , async (interaction : ( StringSelectMenuInteraction)) => {     
           if(data.message.menuReply)      await interaction.deferReply({ephemeral : data.message.menuEphemeral}) 
-          else await interaction.deferUpdate()        
+          else if(interaction.isRepliable()) await interaction.deferUpdate().catch(() => null)
           switch (interaction.customId) {
             case "nextButton"+data.message.interaction.user.id :
               currentPage ++

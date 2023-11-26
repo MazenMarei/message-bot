@@ -9,13 +9,40 @@ export default {
     permissions: [],
     roleRequired: "",
     function: async function ({ button }: { button: ButtonInteraction }) {
-        let BtnData = await buttonConfig.findOne({ID : button.customId , guildId: button.guildId, message : button.message.id})
+        let getWebhook;
+        let BtnData = await buttonConfig.findOne({ID : button.customId })
+        if(button.inGuild()) {
+            BtnData = await buttonConfig.findOne({ID : button.customId , guildId: button.guildId})
+            getWebhook= (await button.guild.fetchWebhooks()).filter(a => a.id === button.message.webhookId && a.owner.id === button.guild.members.me.id);
+            let referenceMsg:any;
+            if(button.message?.reference?.messageId) {
+                try {
+                let GetMsg = (await button.channel.messages.fetch(button.message?.reference?.messageId))
+                let Msg:any = {
+                    "messages":
+                    [
+                        {"data":{
+                            "content":(GetMsg.content.length > 0) ? GetMsg.content : null,
+                            "embeds":(GetMsg.embeds.length > 0) ? GetMsg.embeds : null,
+                            "attachments":[],
+                            "components" : (GetMsg.components.length > 0) ? GetMsg.components : null
+                        }}]}
+        
+                Msg =  JSON.stringify(Msg)
+                let bufferMsg = Buffer.from(Msg,"utf-8").toString("base64")   
+                referenceMsg = (await buttonConfig.find({guildId : button.guildId , type : "msg"})).filter(e => e.data.message == bufferMsg)
+                } catch (error) {
+                    null
+                }
+               } 
+            if( !referenceMsg && !getWebhook || !referenceMsg && getWebhook.size == 0) return 
+        }
         if(!BtnData) return
-        let MessagesData =JSON.parse(Buffer.from( BtnData.data.messaage , "base64").toString())
+        let MessagesData = JSON.parse(Buffer.from( BtnData.data.messaage , "base64").toString())
         if(!MessagesData) return 
         await button.deferUpdate()
         switch (BtnData.data.messageType) {
-            case "hide":
+            case "hide":                
                 MessagesData.messages.map(async (msg) => {
                     msg = msg.data
                     await button.followUp({ephemeral : true ,embeds : msg.embeds , content : msg.content , components : msg?.components })
