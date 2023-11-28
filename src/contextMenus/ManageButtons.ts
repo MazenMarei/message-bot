@@ -1,4 +1,4 @@
-import {ApplicationCommandType,MessageContextMenuCommandInteraction ,ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder , ButtonInteraction, ComponentType, ActionRow, MessageActionRowComponent, APIActionRowComponent, APIMessageActionRowComponent, Component, ButtonComponentData, BaseButtonComponentData, ActionRowComponent, MessageComponent, ContextMenuCommandInteraction, Message, ModalBuilder, TextInputBuilder, TextInputStyle} from "discord.js";
+import {ApplicationCommandType,MessageContextMenuCommandInteraction ,ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder , ButtonInteraction, ComponentType, ActionRow, MessageActionRowComponent, APIActionRowComponent, APIMessageActionRowComponent, Component, ButtonComponentData, BaseButtonComponentData, ActionRowComponent, MessageComponent, ContextMenuCommandInteraction, Message, ModalBuilder, TextInputBuilder, TextInputStyle, ChannelType} from "discord.js";
 import { MenuPages } from "../utils/menue.js";
 import buttonConfig from "../models/button.js";
 export default {
@@ -12,7 +12,7 @@ export default {
         let getWebhook = (await interaction.guild.fetchWebhooks()).filter(a => a.id === WebhoockMsg.webhookId && a.owner.id === interaction.guild.members.me.id);
         let webhookCommandId = (await interaction.guild.commands.fetch({force : true})).filter(a => a.applicationId === interaction.guild.members.me.id && a.name === "webhook").first();
         
-        if(!interaction.replied) await interaction.deferReply({ephemeral : true});
+        if(!interaction.replied) await interaction.deferReply({ephemeral : true}).catch(err => null);
         if(!getWebhook || getWebhook.size <= 0 ) return interaction.editReply({embeds : [new EmbedBuilder().setColor("Red").setDescription(`## **لا يمكني اضافة زر الي هذه الرساله , يجب علي الرساله ان تكون من صنع __ويب هوك__ وان يكون الويب هوك من __صنع البوت__ (يمكنك صنع ويب هوك من صنع البوت عن طريق استخادم </webhook create:${webhookCommandId.id}>)**`)]}).catch(err => null)
         let MessageRows = WebhoockMsg.components        
         if (MessageRows.length == 0) return interaction.editReply({ embeds : [new EmbedBuilder().setColor("Red").setDescription("## لا يوجد ازرار للتعديل عليها")]}).catch(err => null)
@@ -115,7 +115,7 @@ async function editBtn(button:ButtonInteraction ,MessageRows:ActionRow<MessageAc
         .addComponents( new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId("btnLabel").setLabel("اسم الزر").setPlaceholder("اكتب الكلام الذي تريد اظهاره علي الزر").setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(80)),new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId("btnEmoji").setLabel("اسم الاموجي او الايدي").setPlaceholder("يجب ان يكون الاموجي الخاص موجود بنفس سيرفرات البوت او اموجي عام").setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(80)) )
 
         let ActionRows = new ActionRowBuilder<ButtonBuilder>().addComponents(ShowDataModalBtn)
-        let BtnData = {type : menueSub.values.value,label : null, Emoji : null,url : null, messaage : null,role : null,messageType : null ,style : null}
+        let BtnData = {msgChannel : null,type : menueSub.values.value,label : null, Emoji : null,url : null, messaage : null,role : null,messageType : null ,style : null}
         switch (menueSub.values.value) {
             case "link":
                 buttonSetupProgressEmbed.setTitle(`## تجهيز الزر (${Btnprogress.progress}/${Btnprogress[BtnData.type]})`)
@@ -147,13 +147,19 @@ async function editBtn(button:ButtonInteraction ,MessageRows:ActionRow<MessageAc
             case "msg" :
                 buttonSetupProgressEmbed.setTitle(`## تجهيز الزر (${Btnprogress.progress}/${Btnprogress[BtnData.type]})`)
                 explainEmbed.setDescription("**حدد نوع الرساله من القائمة في الاسفل**")
-                let messageType = [{label : "مخفية في الروم" , Description : "رساله مخفية يراها من يضغط علي الزر فقط" , Emoji : "👁️" ,value : "hide" } , {label : "عامة في الروم", Description : "رسالة تكون ظاهر للكل" , value : "public"  , Emoji : "📝"} , {label : "رساله في الخاص" , Description : "يتم ارسال رساله الي خاص العضو" , value : "dm" , Emoji : "✉️"}] as any[]
+                let messageType = [{label : "مخفية في الروم" , Description : "رساله مخفية يراها من يضغط علي الزر فقط" , Emoji : "👁️" ,value : "hide" } , {label : "عامة في الروم", Description : "رسالة تكون ظاهر للكل" , value : "public"  , Emoji : "📝"} , {label : "في روم مخصص", Description : "تنرسل رساله في روم محددة" , value : "room"  , Emoji : "📨"} , {label : "رساله في الخاص" , Description : "يتم ارسال رساله الي خاص العضو" , value : "dm" , Emoji : "✉️"}] as any[]
                 let MsgTypeMenue = await MenuPages({pages: messageType,MenuPlaceholder: "حدد نوع الرساله",message: {editReply: true,interaction: button as any,message: button,embeds : [buttonSetupProgressEmbed , explainEmbed]},menueLimts: {MinValues: 1,MaxValues: 1},save: false,cancel: false}) as any
                 BtnData.messageType = MsgTypeMenue.values.flat().find(a => a.value).value
                 Btnprogress.progress ++; 
                 let EmbedDescriptions = buttonSetupProgressEmbed.data.description
                 buttonSetupProgressEmbed.setTitle(`## تجهيز الزر (${Btnprogress.progress}/${Btnprogress[BtnData.type]})`)
                 EmbedDescriptions += "\n**"+Btnprogress.progress+".**   :  نوع الرساله" + `(${messageType.find(a => a.value === BtnData.messageType) .label })`
+                if(MsgTypeMenue.values.flat().find(a => a.value).value == "room") {
+                    let channels = (await button.guild.channels.fetch()).filter(e => e.type === ChannelType.GuildText).map(e => ({label : e.name , Description : e?.parent?.name?e.parent.name:"null" , value : e.id , Emoji : e.isVoiceBased()?"🔊":'📝' }))
+                    let msgChannel = await MenuPages({pages: channels,MenuPlaceholder: "حدد روم الرساله",message: {editReply: true,interaction: button as any,message: button,embeds : [buttonSetupProgressEmbed , explainEmbed]},menueLimts: {MinValues: 1,MaxValues: 1},save: false,cancel: false}) as any
+                    BtnData.msgChannel = msgChannel.values.flat().find(a => a.value).value
+                    EmbedDescriptions += "\n**"+Btnprogress.progress+".**   :   ألروم" + `(<#${BtnData.msgChannel }>)`
+                }
                 buttonSetupProgressEmbed.setDescription(EmbedDescriptions)
 
                 ButtonDataModal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId("btnMessaage").setLabel("رابط الرساله").setPlaceholder("اكتب رابط الرساله من موقع https://discohook.org/?data او https://share.discohook.app/go/").setStyle(TextInputStyle.Paragraph).setRequired(true)))
@@ -214,7 +220,7 @@ async function editBtn(button:ButtonInteraction ,MessageRows:ActionRow<MessageAc
         if(BtnData?.url) newBtn.setURL(BtnData?.url);
         let BtnDataBase = await buttonConfig.findOne({guildId : button.guildId , ID : button.customId , message : WebhoockMsg.id , webhook : WebhoockMsg.webhookId})
         let BtnsIndex = await buttonConfig.find({guildId : button.guildId, message : WebhoockMsg , webhook : WebhoockMsg.webhookId})
-        BtnsIndex = (BtnDataBase.btnID ? BtnDataBase.btnID : (BtnsIndex.length + 1)) as any;
+        BtnsIndex = (BtnDataBase?.btnID ? BtnDataBase.btnID : (BtnsIndex.length + 1)) as any;
         let customID:string;
         if(BtnData.type === "link") {customID = "UrlBtn"+BtnsIndex}
         else if(BtnData.type === "msg") { newBtn.setCustomId("customBtnMsg"+BtnsIndex); customID = "customBtnMsg"+BtnsIndex}

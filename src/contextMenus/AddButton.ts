@@ -1,4 +1,4 @@
-import {ApplicationCommandType,ComponentEmojiResolvable,MessageContextMenuCommandInteraction, APITextInputComponent, AutocompleteInteraction ,ActionRowBuilder, ApplicationCommandOptionType, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Collection, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle , PermissionFlagsBits, APIEmbed, EmbedData, ButtonComponent, ButtonInteraction, APIMessageComponentButtonInteraction, MessageComponentType, APIActionRowComponent, APIActionRowComponentTypes, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ComponentType, Message, ModalSubmitInteraction, ChannelSelectMenuBuilder, ActionRow} from "discord.js";
+import {ApplicationCommandType,ComponentEmojiResolvable,MessageContextMenuCommandInteraction, APITextInputComponent, AutocompleteInteraction ,ActionRowBuilder, ApplicationCommandOptionType, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, Collection, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle , PermissionFlagsBits, APIEmbed, EmbedData, ButtonComponent, ButtonInteraction, APIMessageComponentButtonInteraction, MessageComponentType, APIActionRowComponent, APIActionRowComponentTypes, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ComponentType, Message, ModalSubmitInteraction, ChannelSelectMenuBuilder, ActionRow, ChannelType} from "discord.js";
 import { MenuPages } from "../utils/menue.js";
 import {Buffer} from'buffer';
 import button from "../models/button.js";
@@ -59,7 +59,7 @@ export default {
         .addComponents( new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId("btnLabel").setLabel("اسم الزر").setPlaceholder("اكتب الكلام الذي تريد اظهاره علي الزر").setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(80)),new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId("btnEmoji").setLabel("اسم الاموجي او الايدي").setPlaceholder("يجب ان يكون الاموجي الخاص موجود بنفس سيرفرات البوت او اموجي عام").setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(80)) )
 
         let ActionRows = new ActionRowBuilder<ButtonBuilder>().addComponents(ShowDataModalBtn)
-        let BtnData = {type : menueSub.values.value,label : null, Emoji : null,url : null, messaage : null,role : null,messageType : null ,style : null}
+        let BtnData = {msgChannel : null,type : menueSub.values.value,label : null, Emoji : null,url : null, messaage : null,role : null,messageType : null ,style : null}
         switch (menueSub.values.value) {
             case "link":
                 buttonSetupProgressEmbed.setTitle(`## تجهيز الزر (${Btnprogress.progress}/${Btnprogress[BtnData.type]})`)
@@ -91,15 +91,20 @@ export default {
             case "msg" :
                 buttonSetupProgressEmbed.setTitle(`## تجهيز الزر (${Btnprogress.progress}/${Btnprogress[BtnData.type]})`)
                 explainEmbed.setDescription("**حدد نوع الرساله من القائمة في الاسفل**")
-                let messageType = [{label : "مخفية في الروم" , Description : "رساله مخفية يراها من يضغط علي الزر فقط" , Emoji : "👁️" ,value : "hide" } , {label : "عامة في الروم", Description : "رسالة تكون ظاهر للكل" , value : "public"  , Emoji : "📝"} , {label : "رساله في الخاص" , Description : "يتم ارسال رساله الي خاص العضو" , value : "dm" , Emoji : "✉️"}] as any[]
+                let messageType = [{label : "مخفية في الروم" , Description : "رساله مخفية يراها من يضغط علي الزر فقط" , Emoji : "👁️" ,value : "hide" } , {label : "عامة في الروم", Description : "رسالة تكون ظاهر للكل" , value : "public"  , Emoji : "📝"} , {label : "في روم مخصص", Description : "تنرسل رساله في روم محددة" , value : "room"  , Emoji : "📨"} , {label : "رساله في الخاص" , Description : "يتم ارسال رساله الي خاص العضو" , value : "dm" , Emoji : "✉️"}] as any[]
                 let MsgTypeMenue = await MenuPages({pages: messageType,MenuPlaceholder: "حدد نوع الرساله",message: {editReply: true,interaction: interaction as any,message: interaction,embeds : [buttonSetupProgressEmbed , explainEmbed]},menueLimts: {MinValues: 1,MaxValues: 1},save: false,cancel: false}) as any
                 BtnData.messageType = MsgTypeMenue.values.flat().find(a => a.value).value
                 Btnprogress.progress ++; 
                 let EmbedDescriptions = buttonSetupProgressEmbed.data.description
                 buttonSetupProgressEmbed.setTitle(`## تجهيز الزر (${Btnprogress.progress}/${Btnprogress[BtnData.type]})`)
                 EmbedDescriptions += "\n**"+Btnprogress.progress+".**   :  نوع الرساله" + `(${messageType.find(a => a.value === BtnData.messageType) .label })`
+                if(MsgTypeMenue.values.flat().find(a => a.value).value == "room") {
+                    let channels = (await interaction.guild.channels.fetch()).filter(e => e.type === ChannelType.GuildText).map(e => ({label : e.name , Description : e?.parent?.name?e.parent.name:"null" , value : e.id , Emoji : e.isVoiceBased()?"🔊":'📝' }))
+                    let msgChannel = await MenuPages({pages: channels,MenuPlaceholder: "حدد روم الرساله",message: {editReply: true,interaction: interaction as any,message: interaction,embeds : [buttonSetupProgressEmbed , explainEmbed]},menueLimts: {MinValues: 1,MaxValues: 1},save: false,cancel: false}) as any
+                    BtnData.msgChannel = msgChannel.values.flat().find(a => a.value).value
+                    EmbedDescriptions += "\n**"+Btnprogress.progress+".**   :   ألروم" + `(<#${BtnData.msgChannel }>)`
+                }
                 buttonSetupProgressEmbed.setDescription(EmbedDescriptions)
-
                 ButtonDataModal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder().setCustomId("btnMessaage").setLabel("رابط الرساله").setPlaceholder("اكتب رابط الرساله من موقع https://discohook.org/?data او https://share.discohook.app/go/").setStyle(TextInputStyle.Paragraph).setRequired(true)))
                 break
             default :

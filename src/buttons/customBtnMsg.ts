@@ -1,4 +1,4 @@
-import { BitField, ButtonInteraction, GuildTextBasedChannel, Message, MessageFlags, MessageFlagsBitField } from "discord.js";
+import { BaseGuildTextChannel, BitField, ButtonInteraction, GuildTextBasedChannel, Message, MessageFlags, MessageFlagsBitField } from "discord.js";
 import { MenuPages } from "../utils/menue.js";
 import buttonConfig from "../models/button.js";
 import {Buffer} from'buffer';
@@ -63,6 +63,15 @@ export default {
                     await button.followUp({embeds : msg.embeds , content : msg.content , components : msg?.components })
                 })
                 break;
+            case "room" :
+                let channel = await button.guild?.channels?.fetch(BtnData.data.msgChannel).catch(err => false) as BaseGuildTextChannel
+                if(!channel) return;
+                MessagesData.messages.map(async (msg) => {
+                    msg = msg.data
+                    await channel.send({embeds : msg.embeds , content : msg.content , components : msg?.components })
+                })
+                break;
+
         }                
      
     },
