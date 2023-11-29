@@ -15,6 +15,7 @@ const Button = new mongoose.Schema({
     message : String,
     webhook : String,
     type : String,
+    sendedMsg : String,
 }, { timestamps: { createdAt: 'Created at' }});
 
 export default  mongoose.model('Buttons', Button);

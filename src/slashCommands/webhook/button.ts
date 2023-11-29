@@ -178,6 +178,7 @@ export default {
                     Emoji : orignalBtnData.data.Emoji,
                     url   : orignalBtnData.data.url,
                     messaage : bufferMsg,
+                    msgChannel : orignalBtnData?.data.msgChannel,
                     role  : orignalBtnData.data.role,
                     messageType : orignalBtnData.data.messageType,
                     style : orignalBtnData.data.style
@@ -200,7 +201,9 @@ export default {
                             let editData = await editBtn(button ,buttonMsg.components , AdditionalComponents,BtnsID,buttonMsg )
                             await interaction.editReply({components : AdditionalComponents})
                             await  buttonMsg.edit( {components : buttonMsg.components })
-                            await buttonConfig.findOneAndUpdate({guildId : button.guildId ,  ID : button.customId } ,{ guildId : button.guildId ,  ID : editData.ID ,btnID : editData.btnID , data : editData.data,type : editData.type  } )
+                            let update = await buttonConfig.findOneAndUpdate({guildId : button.guildId ,  ID : button.customId } ,{ guildId : button.guildId ,  ID : editData.ID ,btnID : editData.btnID , data : editData.data,type : editData.type  } )
+                            console.log(update);
+                            
                         }
 
                         let MsgData:any = {
@@ -222,6 +225,7 @@ export default {
                             Emoji : orignalBtnData.data.Emoji,
                             url   : orignalBtnData.data.url,
                             messaage : bufferMsg,
+                            msgChannel : orignalBtnData?.data.msgChannel,
                             role  : orignalBtnData.data.role,
                             messageType : orignalBtnData.data.messageType,
                             style : orignalBtnData.data.style

@@ -13,7 +13,9 @@ export default {
         let BtnData = await buttonConfig.findOne({ID : button.customId })
         if(button.inGuild()) {
             BtnData = await buttonConfig.findOne({ID : button.customId , guildId: button.guildId})
+            let customchannel =  await buttonConfig.findOne({guildId: button.guildId , sendedMsg : button.message.id})
             getWebhook= (await button.guild.fetchWebhooks()).filter(a => a.id === button.message.webhookId && a.owner.id === button.guild.members.me.id);
+            if(customchannel) getWebhook = true
             let referenceMsg:any;
             if(button.message?.reference?.messageId) {
                 try {
@@ -35,7 +37,8 @@ export default {
                     null
                 }
                } 
-            if( !referenceMsg && !getWebhook || !referenceMsg && getWebhook.size == 0) return 
+            if( !referenceMsg && !getWebhook || !referenceMsg && getWebhook.size == 0) return ;
+            
         }
         if(!BtnData) return
         let MessagesData = JSON.parse(Buffer.from( BtnData.data.messaage , "base64").toString())
@@ -64,11 +67,13 @@ export default {
                 })
                 break;
             case "room" :
-                let channel = await button.guild?.channels?.fetch(BtnData.data.msgChannel).catch(err => false) as BaseGuildTextChannel
+                let channel = await button.guild?.channels?.fetch(BtnData.data.msgChannel).catch(err => false) as BaseGuildTextChannel;
                 if(!channel) return;
                 MessagesData.messages.map(async (msg) => {
-                    msg = msg.data
-                    await channel.send({embeds : msg.embeds , content : msg.content , components : msg?.components })
+                    msg = msg.data;
+                    if(( msg?.embeds?.length == 0 && msg?.content?.length == 0 && msg?.components?.length == 0 && msg?.attachments?.length == 0 ) || (!msg.embeds &&  !msg.content && msg?.attachments?.length == 0)) return;
+                    let msgId = await channel.send({embeds : msg?.embeds , content : msg?.content , components : msg?.components })
+                    await BtnData.updateOne({sendedMsg : msgId})
                 })
                 break;
 
